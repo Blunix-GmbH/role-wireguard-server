@@ -1,0 +1,79 @@
+- name: setup wireguard apt repo key
+  apt_key:
+    keyserver: "keyserver.ubuntu.com"
+    id: "8B48AD6246925553"
+    state: present
+
+- name: setup wireguard repository
+  apt_repository:
+    repo: "deb https://deb.debian.org/debian/ unstable main"
+    state: present
+    update_cache: True
+
+- name: setup wireguard apt preference
+  template:
+    src: templates/etc/apt/preferences.d/limit-unstable.j2
+    dest: /etc/apt/preferences.d/limit-unstable
+    owner: root
+    group: root
+    mode: 0644
+
+- name: install wireguard
+  apt:
+    name:
+      - wireguard-dkms
+      - wireguard-tools
+      # TODO needs those packages too for whatever reason
+      - libmnl-dev
+      - libelf-dev
+      - "linux-headers-{{ ansible_kernel }}"
+      - build-essential
+      - pkg-config
+    state: present
+
+
+- name: generate servers private and public key
+  shell: |
+      wg genkey | tee {{ wireguard_interface }}.key | wg pubkey > {{ wireguard_interface }}.pub
+      chmod -v 400 /etc/wireguard/*key
+  args:
+    chdir: /etc/wireguard
+    creates: "/etc/wireguard/{{ wireguard_interface }}.pub"
+  notify: restart wireguard
+
+- name: cat the servers public key for setting it as fact
+  shell: "cat /etc/wireguard/{{ wireguard_interface }}.pub"
+  register: wireguard_server_public_key_out
+
+- name: set fact for the servers public key
+  set_fact:
+    wireguard_server_public_key: "{{ wireguard_server_public_key_out.stdout_lines[0] }}"
+
+- name: "template /etc/wireguard/{{ wireguard_interface }}.conf"
+  template:
+    src: templates/etc/wireguard/server.conf.j2
+    dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart wireguard
+
+
+- name: create client configs directory
+  file:
+    state: directory
+    path: "/etc/wireguard/{{ wireguard_interface }}-clients"
+    owner: root
+    group: root
+    mode: 0700
+
+- name: template client configs
+  template:
+    src: templates/etc/wireguard/client.conf.j2
+    dest: "/etc/wireguard/{{ wireguard_interface }}-clients/{{ wireguard_peer }}.conf"
+    owner: root
+    group: root
+    mode: 0600
+  with_items: "{{ wireguard_peers }}"
+  loop_control:
+    loop_var: wireguard_peer

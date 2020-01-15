@@ -1,0 +1,18 @@
+[Interface]
+Address = 10.0.0.1
+ListenPort = 51820
+PostUp = wg set %i private-key /etc/wireguard/{{ wireguard_interface }}.key
+
+{% for wireguard_peer in wireguard_peers %}
+[Peer]
+# clients public key
+PublicKey = {{ wireguard_peer['public_key'] }}
+{% if wireguard_server_route_to_subnets is defined %}
+# Static wireguard client IP and accessible subnets
+AllowedIPs = {{ wireguard_peer['ip'] }}/32, {{ wireguard_server_route_to_subnets }}
+{% else %}
+# Static wireguard client IP
+AllowedIPs = {{ wireguard_peer['ip'] }}/32
+{% endif %}
+
+{% endfor %}

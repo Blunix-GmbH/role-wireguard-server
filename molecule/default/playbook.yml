@@ -1,0 +1,27 @@
+- name: Converge
+  hosts: all
+  roles:
+    - role-wireguard-server
+  vars:
+
+    # Name of this wireguard instance (interface)
+    wireguard_interface: wg0
+    # Public IP of the server
+    wireguard_server_public_ip: 4.3.2.1
+    # Public port of the server
+    wireguard_server_port: 51820
+    # Subnet of this wireguard instance
+    wireguard_subnet: 10.0.0.0/24
+    # Private IP of the server in this subnet
+    wireguard_server_ip: 10.0.0.1
+
+    # If defined, will add a DNS servers IP to the peers config files which is reached over wireguard
+    wireguard_dns_server_ip: "{{ wireguard_server_ip }}"
+    # State routes to the peers (clients) for additional subnets to which the server is connected
+    wireguard_server_route_to_subnets: "172.16.0.0/24, 178.12.0.0/24"
+
+    # List of peers
+    wireguard_peers:
+      - name: john.doe@example.com-workstation
+        ip: 10.0.0.5
+        public_key: 'abcdefghijklmnopqrstuvwxyz0123456789abcdefg='
