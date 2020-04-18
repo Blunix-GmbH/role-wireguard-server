@@ -26,8 +26,8 @@ wg-quick up wg0
 ```
 or:
 ```
-systemctl start wg-quick@wg0.service
 systemctl enable wg-quick@wg0.service
+systemctl start wg-quick@wg0.service
 ```
 
 
@@ -38,6 +38,33 @@ systemctl enable wg-quick@wg0.service
 - Provide the `public.key` content to the wireguard server administrator over a secure channel
 - Receive the client config from the admin
 - Install the client config
+
+Client config file example `/etc/wireguard/wg0.conf`:
+```
+[Interface]
+Address = 10.0.0.5/32
+#ListenPort = 12345
+# client private key
+PrivateKey = @@@secret-private-key@@@
+# use wireguard server as dns server
+#dns = 10.0.0.1
+
+[Peer]
+# server public key
+PublicKey = @@@public-key@@@
+Endpoint = serverIP:serverPort
+PersistentKeepalive = 10
+
+# regular VPN
+AllowedIPs = 10.0.0.0/24, 172.16.0.0/24
+# forward all traffic
+AllowedIPs = 0.0.0.0/0, ::/0
+```
+
+Start the client:
+```
+wg-quick up wg0
+```
 
 Further documentation:  
 https://www.wireguard.com/install/
