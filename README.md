@@ -61,9 +61,21 @@ AllowedIPs = 10.0.0.0/24, 172.16.0.0/24
 AllowedIPs = 0.0.0.0/0, ::/0
 ```
 
+Generate client certificate:
+```
+cd /etc/wireguard
+wg genkey | tee client_private_key | wg pubkey > client_public_key
+chmod 400 *
+```
+
 Start the client:
 ```
 wg-quick up wg0
+```
+
+Monitor the connection:
+```
+watch sudo wg show
 ```
 
 Further documentation:  

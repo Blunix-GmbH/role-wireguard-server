@@ -32,6 +32,7 @@
     state: present
 
 
+
 - name: generate servers private and public key
   shell: |
       wg genkey | tee {{ wireguard_interface }}.key | wg pubkey > {{ wireguard_interface }}.pub
@@ -57,6 +58,19 @@
     group: root
     mode: 0600
   notify: restart wireguard
+
+- sysctl:
+    name: "{{ wireguard_server_systctl_item }}"
+    value: '1'
+    sysctl_set: True
+    state: present
+    reload: True
+  loop_control:
+    loop_var: wireguard_server_systctl_item
+  with_items:
+    - "net.ipv4.ip_forward"
+    - "net.ipv6.conf.all.forwarding"
+
 
 
 - name: create client configs directory
