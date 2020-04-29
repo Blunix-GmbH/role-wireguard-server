@@ -78,6 +78,11 @@ Monitor the connection:
 watch sudo wg show
 ```
 
+Start on boot:
+```
+systemctl enable wg-quick@wg0.service
+```
+
 Further documentation:  
 https://www.wireguard.com/install/
 
