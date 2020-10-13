@@ -1,7 +1,9 @@
 [Interface]
-Address = 10.0.0.1
-ListenPort = 51820
+Address = {{ wireguard_server_ip }}
+ListenPort = {{ wireguard_server_port }}
 PostUp = wg set %i private-key /etc/wireguard/{{ wireguard_interface }}.key
+
+
 
 {% for wireguard_peer in wireguard_peers %}
 [Peer]

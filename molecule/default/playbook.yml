@@ -1,27 +1,86 @@
-- name: Converge
+- name: Converge (client)
+  hosts: bullseye2
+  tasks:
+
+    - name: install wireguard packages
+      apt:
+        name:
+          - wireguard
+          - resolvconf
+        state: present
+
+    - name: generate wireguard client key
+      shell: |
+        set -o pipefail
+        wg genkey | tee private.key | wg pubkey | tee public.key
+      args:
+        executable: /bin/bash
+        chdir: /etc/wireguard
+        creates: /etc/wireguard/public.key
+
+
+
+- name: Converge (server)
   hosts: all
-  roles:
-    - role-wireguard-server
-  vars:
+  tasks:
 
-    # Name of this wireguard instance (interface)
-    wireguard_interface: wg0
-    # Public IP of the server
-    wireguard_server_public_ip: 4.3.2.1
-    # Public port of the server
-    wireguard_server_port: 51820
-    # Subnet of this wireguard instance
-    wireguard_subnet: 10.0.0.0/24
-    # Private IP of the server in this subnet
-    wireguard_server_ip: 10.0.0.1
+    - name: get wireguard client public.key into variable  # noqa 305
+      shell: cat /etc/wireguard/public.key
+      register: wireguard_client_public_key
+      delegate_to: bullseye2
+      when: inventory_hostname == "bullseye1"
 
-    # If defined, will add a DNS servers IP to the peers config files which is reached over wireguard
-    wireguard_dns_server_ip: "{{ wireguard_server_ip }}"
-    # State routes to the peers (clients) for additional subnets to which the server is connected
-    wireguard_server_route_to_subnets: "172.16.0.0/24, 178.12.0.0/24"
 
-    # List of peers
-    wireguard_peers:
-      - name: john.doe@example.com-workstation
-        ip: 10.0.0.5
-        public_key: 'abcdefghijklmnopqrstuvwxyz0123456789abcdefg='
+
+    - name: execute role-wireguard on "bullseye1"
+      when: inventory_hostname == "bullseye1"
+      include_role:
+        name: role-wireguard-server
+      vars:
+
+        # Name of this wireguard instance (interface)
+        wireguard_interface: wg0
+
+        # Public IP of the server
+        wireguard_server_public_ip: 10.99.0.5
+
+        # Subnet of this wireguard instance
+        wireguard_subnet: 172.128.0.0/16
+
+        # Wireguard IP of the server
+        wireguard_server_ip: 172.128.0.1
+
+        # If defined, will add a DNS servers IP to the peers config files which is reached over wireguard
+        wireguard_dns_server_ip: "{{ wireguard_server_ip }}"
+
+        # State routes to the peers (clients) for additional subnets to which the server is connected
+        wireguard_server_route_to_subnets: "172.16.0.0/24, 178.12.0.0/24"
+
+        # List of peers
+        wireguard_peers:
+          - name: bullseye2
+            ip: 172.128.0.5
+            public_key: "{{ wireguard_client_public_key.stdout }}"
+
+
+
+    - name: get clients wg0.conf into a variable  # noqa 305
+      shell: cat /etc/wireguard/wg0-clients/bullseye2.conf
+      register: wireguard_client_config
+      when: inventory_hostname == "bullseye1"
+
+    - name: template client config
+      copy:
+        content: "{{ hostvars['bullseye1']['wireguard_client_config']['stdout'] }}"
+        dest: /etc/wireguard/wg0.conf
+        owner: root
+        group: root
+        mode: 0600
+      when: inventory_hostname == "bullseye2"
+
+    - name: start wireguard client on bullseye2
+      systemd:
+        name: wg-quick@wg0.service
+        state: restarted
+        enabled: True
+      when: inventory_hostname == "bullseye2"

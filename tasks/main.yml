@@ -1,48 +1,24 @@
-- name: setup wireguard apt repo key
-  apt_key:
-    keyserver: "keyserver.ubuntu.com"
-    id: "8B48AD6246925553"
-    state: present
-
-- name: setup wireguard repository
-  apt_repository:
-    repo: "deb https://deb.debian.org/debian/ unstable main"
-    state: present
-    update_cache: True
-
-- name: setup wireguard apt preference
-  template:
-    src: templates/etc/apt/preferences.d/limit-unstable.j2
-    dest: /etc/apt/preferences.d/limit-unstable
-    owner: root
-    group: root
-    mode: 0644
-
 - name: install wireguard
   apt:
     name:
       - wireguard-dkms
       - wireguard-tools
-      # TODO needs those packages too for whatever reason
-      - libmnl-dev
-      - libelf-dev
-      - "linux-headers-{{ ansible_kernel }}"
-      - build-essential
-      - pkg-config
     state: present
 
 
 
-- name: generate servers private and public key
+- name: generate servers private and public key  # noqa 503
   shell: |
+      set -o pipefail
       wg genkey | tee {{ wireguard_interface }}.key | wg pubkey > {{ wireguard_interface }}.pub
       chmod -v 400 /etc/wireguard/*key
   args:
+    executable: /bin/bash
     chdir: /etc/wireguard
     creates: "/etc/wireguard/{{ wireguard_interface }}.pub"
   notify: restart wireguard
 
-- name: cat the servers public key for setting it as fact
+- name: cat the servers public key for setting it as fact  # noqa 301 305
   shell: "cat /etc/wireguard/{{ wireguard_interface }}.pub"
   register: wireguard_server_public_key_out
 
@@ -59,7 +35,8 @@
     mode: 0600
   notify: restart wireguard
 
-- sysctl:
+- name: set wireguard related sysctl ip settings
+  sysctl:
     name: "{{ wireguard_server_systctl_item }}"
     value: '1'
     sysctl_set: True
@@ -84,7 +61,7 @@
 - name: template client configs
   template:
     src: templates/etc/wireguard/client.conf.j2
-    dest: "/etc/wireguard/{{ wireguard_interface }}-clients/{{ wireguard_peer }}.conf"
+    dest: "/etc/wireguard/{{ wireguard_interface }}-clients/{{ wireguard_peer['name'] }}.conf"
     owner: root
     group: root
     mode: 0600

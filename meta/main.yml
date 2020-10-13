@@ -1,16 +1,19 @@
 galaxy_info:
+
+  description: installs and configures a wireguard server
   author: Peter Thurner
   company: Blunix GmbH
   license: Apache2
-  min_ansible_version: 2.7.8
+  min_ansible_version: 2.9.10
 
   platforms:
   - name: Debian
     versions:
-    - buster
+    - bullseye
 
   galaxy_tags:
   - blunix
   - wireguard
+  - vpn
 
 dependencies: []
