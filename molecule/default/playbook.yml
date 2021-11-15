@@ -44,6 +44,12 @@
         # Public IP of the server
         wireguard_server_public_ip: 10.99.0.5
 
+        # Public IPs of all wireguard servers (main and backups)
+        wireguard_all_server_public_ips:
+          - 10.99.0.5
+          #- "{{ hostvars['cus-util-prod-gateway-1']['nic_pub_ip'] }}"
+          #- "{{ hostvars['cus-util-prod-gateway-2']['nic_pub_ip'] }}"
+
         # Subnet of this wireguard instance
         wireguard_subnet: 172.128.0.0/16
 

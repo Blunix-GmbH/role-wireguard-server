@@ -1,22 +1,33 @@
+# Wireguard client configuration file
+#
+# Edit the lines with the keyword EDITME
+
+
+
 [Interface]
+# This clients private key
+# EDITME enter the path to your private key here
+PostUp = wg set %i private-key /etc/wireguard/private.key
+
+
 # This clients wireguard VPN IP address
 Address = {{ wireguard_peer['ip'] }}/32
-# This clients private key
-PostUp = wg set %i private-key /etc/wireguard/private.key
 # Setup this DNS server in /etc/resolv.conf, accessible via the wireguard VPN
 {% if wireguard_dns_server_ip is defined %}
-dns = {{ wireguard_dns_server_ip }}
+DNS = {{ wireguard_dns_server_ip }}
 {% endif %}
 
+
+
 [Peer]
-# The wireguard servers public key
-PublicKey = {{ wireguard_server_public_key }}
 # The wireguard servers IP and port
-Endpoint = {{ wireguard_server_public_ip }}:{{ wireguard_server_port }}
-# Use keepalive for NAT
-PersistentKeepalive = {{ wireguard_client_persistent_keepalive }}
+# EDITME uncomment one of the endpoints
+{% for wireguard_all_server_public_ip in wireguard_all_server_public_ips %}
+#Endpoint = {{ wireguard_all_server_public_ip }}:{{ wireguard_server_port }}
+{% endfor %}
 
 # Use regular VPN functionality
+# EDITME select one of both settings
 {% if wireguard_server_route_to_subnets is defined %}
 AllowedIPs = {{ wireguard_subnet }}, {{ wireguard_server_route_to_subnets }}
 {% else %}
@@ -24,3 +35,9 @@ AllowedIPs = {{ wireguard_subnet }}
 {% endif %}
 # Forward all traffic through the wireguard server
 #AllowedIPs = 0.0.0.0/0, ::/0
+
+
+# The wireguard servers public key
+PublicKey = {{ wireguard_server_public_key }}
+# Use keepalive for NAT
+PersistentKeepalive = {{ wireguard_client_persistent_keepalive }}
