@@ -1,43 +1,34 @@
 # Wireguard client configuration file
 #
-# Edit the lines with the keyword EDITME
+# Read this file carefully and edit the EDITME lines
 
 
 
 [Interface]
-# This clients private key
-# EDITME enter the path to your private key here
-PostUp = wg set %i private-key /etc/wireguard/private.key
-
+# This clients private key - EDITME
+PostUp      = wg set %i private-key /etc/wireguard/private.key
 
 # This clients wireguard VPN IP address
-Address = {{ wireguard_peer['ip'] }}/32
-# Setup this DNS server in /etc/resolv.conf, accessible via the wireguard VPN
-{% if wireguard_dns_server_ip is defined %}
-DNS = {{ wireguard_dns_server_ip }}
-{% endif %}
-
+Address     = {{ wireguard_peer['ip'] }}/32
+DNS         = {{ wireguard_dns_server_ip }}
 
 
 [Peer]
-# The wireguard servers IP and port
-# EDITME uncomment one of the endpoints
-{% for wireguard_all_server_public_ip in wireguard_all_server_public_ips %}
-#Endpoint = {{ wireguard_all_server_public_ip }}:{{ wireguard_server_port }}
+# Access to the company wireguard network only - EDITME
+{% if wireguard_server_route_to_subnets is defined %}
+AllowedIPs  = {{ wireguard_subnet }}, {{ wireguard_server_route_to_subnets }}
+{% else %}
+AllowedIPs  = {{ wireguard_subnet }}
+{% endif %}
+# Access all of the internet over the company wireguard server - EDITME
+#AllowedIPs = 0.0.0.0/0,::0/0
+
+# Select a wireguard server (if one is down then select the other one) - EDITME
+{% for wireguard_server in wireguard_servers %}
+# Wireguard server {{ wireguard_server }}
+#PublicKey  = {{ hostvars[wireguard_server]['wireguard_server_public_key'] }}
+#Endpoint   = {{ hostvars[wireguard_server]['nic_pub_ip'] }}:{{ wireguard_server_port }}
 {% endfor %}
 
-# Use regular VPN functionality
-# EDITME select one of both settings
-{% if wireguard_server_route_to_subnets is defined %}
-AllowedIPs = {{ wireguard_subnet }}, {{ wireguard_server_route_to_subnets }}
-{% else %}
-AllowedIPs = {{ wireguard_subnet }}
-{% endif %}
-# Forward all traffic through the wireguard server
-#AllowedIPs = 0.0.0.0/0, ::/0
-
-
-# The wireguard servers public key
-PublicKey = {{ wireguard_server_public_key }}
-# Use keepalive for NAT
+# Keepalive setting
 PersistentKeepalive = {{ wireguard_client_persistent_keepalive }}
