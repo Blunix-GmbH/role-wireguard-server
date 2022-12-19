@@ -6,6 +6,7 @@ PostUp = wg set %i private-key /etc/wireguard/{{ wireguard_interface }}.key
 
 
 {% for wireguard_peer in wireguard_peers %}
+# {{ wireguard_peer['name'] }}
 [Peer]
 # clients public key
 PublicKey = {{ wireguard_peer['public_key'] }}
